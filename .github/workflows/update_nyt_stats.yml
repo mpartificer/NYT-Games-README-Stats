@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout current repository
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -30,9 +30,93 @@ jobs:
         run: |
           python nyt_stats.py
 
-      - name: Commit and push if changed
+      - name: Checkout profile repository
+        uses: actions/checkout@v3
+        with:
+          repository: mpartificer/mpartificer
+          path: profile-repo
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: Copy update_profile_readme.py script
         run: |
-          git config --global user.name 'GitHub Action'
-          git config --global user.email 'action@github.com'
+          cat > update_profile_readme.py << 'EOF'
+          import re
+          import os
+
+          def update_profile_readme():
+              """
+              Update the profile README with the NYT stats content
+              """
+              source_readme = 'README.md'
+              target_readme = 'profile-repo/README.md'
+              
+              # Check if target README exists
+              if not os.path.exists(target_readme):
+                  print("Profile README does not exist, creating it")
+                  with open(source_readme, 'r') as source_file:
+                      content = source_file.read()
+                  with open(target_readme, 'w') as target_file:
+                      target_file.write(content)
+                  return
+              
+              print("Profile README exists, updating it")
+              
+              # Define start and end markers
+              start_marker = "<!-- NYT_STATS_START -->"
+              end_marker = "<!-- NYT_STATS_END -->"
+              
+              # Read source README to get the stats content
+              with open(source_readme, 'r') as source_file:
+                  source_content = source_file.read()
+              
+              # Extract stats content using regex
+              pattern = f"({start_marker}.*?{end_marker})"
+              match = re.search(pattern, source_content, re.DOTALL)
+              
+              if not match:
+                  print("Could not find markers in source README")
+                  return
+              
+              stats_content = match.group(1)
+              print(f"Extracted stats content: {len(stats_content)} characters")
+              
+              # Read target README
+              with open(target_readme, 'r') as target_file:
+                  target_content = target_file.read()
+              
+              # Check if profile README already has markers
+              if start_marker in target_content:
+                  print("Markers found in profile README, updating content")
+                  # Replace content between markers
+                  updated_content = re.sub(
+                      f"{start_marker}.*?{end_marker}", 
+                      stats_content, 
+                      target_content, 
+                      flags=re.DOTALL
+                  )
+              else:
+                  print("Adding markers and content to profile README")
+                  # Append markers and content to profile README
+                  updated_content = target_content + f"\n\n{stats_content}\n"
+              
+              # Write updated content back to target README
+              with open(target_readme, 'w') as target_file:
+                  target_file.write(updated_content)
+              
+              print("Profile README successfully updated")
+
+          if __name__ == "__main__":
+              update_profile_readme()
+          EOF
+
+      - name: Update profile README
+        run: |
+          python update_profile_readme.py
+
+      - name: Commit and push profile changes
+        run: |
+          cd profile-repo
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add README.md
           git diff --quiet && git diff --staged --quiet || (git commit -m "Update NYT puzzle stats" && git push)
