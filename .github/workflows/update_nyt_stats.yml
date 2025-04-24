@@ -37,86 +37,79 @@ jobs:
           path: profile-repo
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
-      - name: Copy update_profile_readme.py script
+      - name: Create and run update script
         run: |
-          cat > update_profile_readme.py << 'EOF'
+          cat > update_profile.py << 'EOF'
           import re
           import os
+          import subprocess
 
           def update_profile_readme():
-              """
-              Update the profile README with the NYT stats content
-              """
+              """Update profile README with NYT stats"""
+              # Define paths
               source_readme = 'README.md'
               target_readme = 'profile-repo/README.md'
               
-              # Check if target README exists
-              if not os.path.exists(target_readme):
-                  print("Profile README does not exist, creating it")
-                  with open(source_readme, 'r') as source_file:
-                      content = source_file.read()
-                  with open(target_readme, 'w') as target_file:
-                      target_file.write(content)
-                  return
-              
-              print("Profile README exists, updating it")
-              
-              # Define start and end markers
+              # Define markers
               start_marker = "<!-- NYT_STATS_START -->"
               end_marker = "<!-- NYT_STATS_END -->"
               
-              # Read source README to get the stats content
-              with open(source_readme, 'r') as source_file:
-                  source_content = source_file.read()
+              # Read source README (the one with fresh stats)
+              with open(source_readme, 'r') as f:
+                  source_content = f.read()
               
-              # Extract stats content using regex
-              pattern = f"({start_marker}.*?{end_marker})"
-              match = re.search(pattern, source_content, re.DOTALL)
+              # Extract stats content
+              stats_pattern = re.compile(f"{start_marker}.*?{end_marker}", re.DOTALL)
+              stats_match = stats_pattern.search(source_content)
               
-              if not match:
-                  print("Could not find markers in source README")
-                  return
+              if not stats_match:
+                  print("Could not find stats markers in source README")
+                  return False
+                  
+              stats_content = stats_match.group(0)
               
-              stats_content = match.group(1)
-              print(f"Extracted stats content: {len(stats_content)} characters")
+              # Check if target README exists
+              if not os.path.exists(target_readme):
+                  print("Profile README doesn't exist, creating it")
+                  with open(target_readme, 'w') as f:
+                      f.write(f"# My GitHub Profile\n\n{stats_content}\n")
+                  return True
               
-              # Read target README
-              with open(target_readme, 'r') as target_file:
-                  target_content = target_file.read()
+              # Read target README (profile README)
+              with open(target_readme, 'r') as f:
+                  profile_content = f.read()
               
-              # Check if profile README already has markers
-              if start_marker in target_content:
-                  print("Markers found in profile README, updating content")
-                  # Replace content between markers
-                  updated_content = re.sub(
-                      f"{start_marker}.*?{end_marker}", 
-                      stats_content, 
-                      target_content, 
-                      flags=re.DOTALL
-                  )
+              # Update or append stats
+              if start_marker in profile_content:
+                  print("Updating existing stats in profile README")
+                  updated_content = stats_pattern.sub(stats_content, profile_content)
               else:
-                  print("Adding markers and content to profile README")
-                  # Append markers and content to profile README
-                  updated_content = target_content + f"\n\n{stats_content}\n"
+                  print("Adding stats to profile README")
+                  updated_content = f"{profile_content}\n\n{stats_content}\n"
               
-              # Write updated content back to target README
-              with open(target_readme, 'w') as target_file:
-                  target_file.write(updated_content)
+              # Write updated content
+              with open(target_readme, 'w') as f:
+                  f.write(updated_content)
               
-              print("Profile README successfully updated")
+              # Git operations
+              os.chdir('profile-repo')
+              subprocess.run(['git', 'config', '--global', 'user.name', 'github-actions[bot]'])
+              subprocess.run(['git', 'config', '--global', 'user.email', 'github-actions[bot]@users.noreply.github.com'])
+              subprocess.run(['git', 'add', 'README.md'])
+              
+              # Check if there are changes to commit
+              result = subprocess.run(['git', 'diff', '--staged', '--quiet'], capture_output=True)
+              if result.returncode == 1:  # Changes detected
+                  subprocess.run(['git', 'commit', '-m', 'Update NYT puzzle stats'])
+                  subprocess.run(['git', 'push'])
+                  print("Changes pushed to profile repository")
+                  return True
+              else:
+                  print("No changes to commit")
+                  return False
 
           if __name__ == "__main__":
               update_profile_readme()
           EOF
 
-      - name: Update profile README
-        run: |
-          python update_profile_readme.py
-
-      - name: Commit and push profile changes
-        run: |
-          cd profile-repo
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add README.md
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update NYT puzzle stats" && git push)
+          python update_profile.py
