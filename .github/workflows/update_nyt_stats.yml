@@ -122,6 +122,17 @@ jobs:
               subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'])
               subprocess.run(['git', 'config', 'user.email', 'github-actions[bot]@users.noreply.github.com'])
               
+              # Set remote URL with token (in case it was overridden)
+              token = os.environ.get('PERSONAL_ACCESS_TOKEN')
+              if token:
+                  print("Setting remote URL with token...")
+                  subprocess.run(['git', 'remote', 'set-url', 'origin', f'https://x-access-token:{token}@github.com/mpartificer/mpartificer.git'])
+                  print("Updated git remote:")
+                  subprocess.run(['git', 'remote', '-v'])
+              else:
+                  print("PERSONAL_ACCESS_TOKEN not found in environment")
+                  return False
+              
               # Add and commit
               subprocess.run(['git', 'add', 'README.md'])
               
