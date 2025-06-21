@@ -36,6 +36,14 @@ jobs:
           repository: mpartificer/mpartificer
           path: profile-repo
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          ref: main
+
+      - name: Configure git for profile repo
+        run: |
+          cd profile-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/mpartificer/mpartificer.git
 
       - name: Create and run update script
         env:
@@ -114,17 +122,11 @@ jobs:
                   print("Changes detected, committing...")
                   subprocess.run(['git', 'commit', '-m', 'Update NYT puzzle stats'])
                   
-                  # Push using token directly in URL
-                  token = os.environ.get('PERSONAL_ACCESS_TOKEN')
-                  if token:
-                      push_url = f"https://{token}@github.com/mpartificer/mpartificer.git"
-                      print(f"Pushing to: {push_url[:20]}...")
-                      subprocess.run(['git', 'push', push_url, 'main'])
-                      print("Changes pushed to profile repository")
-                      return True
-                  else:
-                      print("PERSONAL_ACCESS_TOKEN not found in environment")
-                      return False
+                  # Simple push - the checkout action should handle auth
+                  print("Pushing changes...")
+                  subprocess.run(['git', 'push'])
+                  print("Changes pushed to profile repository")
+                  return True
               else:
                   print("No changes to commit")
                   return False
