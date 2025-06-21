@@ -54,23 +54,15 @@ jobs:
         env:
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
-          # Install GitHub CLI
-          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
-          chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
-          apt-get update
-          apt-get install gh -y
-
-          # Authenticate with GitHub CLI
-          echo "$PERSONAL_ACCESS_TOKEN" | gh auth login --with-token
-
           cat > update_profile.py << 'EOF'
           import re
           import os
           import subprocess
+          import requests
+          import base64
 
           def update_profile_readme():
-              """Update profile README with NYT stats"""
+              """Update profile README with NYT stats using GitHub API"""
               # Define paths
               source_readme = 'README.md'
               target_readme = 'profile-repo/README.md'
@@ -94,13 +86,6 @@ jobs:
               stats_content = stats_match.group(0)
               print(f"Found stats content: {stats_content[:100]}...")
               
-              # Check if target README exists
-              if not os.path.exists(target_readme):
-                  print("Profile README doesn't exist, creating it")
-                  with open(target_readme, 'w') as f:
-                      f.write(f"# My GitHub Profile\n\n{stats_content}\n")
-                  return True
-              
               # Read target README (profile README)
               with open(target_readme, 'r') as f:
                   profile_content = f.read()
@@ -113,45 +98,51 @@ jobs:
                   updated_content = stats_pattern.sub(stats_content, profile_content)
               else:
                   print("Adding stats to profile README")
-                  updated_content = f"{profile_content}\n\n{stats_content}\n"
-              
-              # Write updated content
-              with open(target_readme, 'w') as f:
-                  f.write(updated_content)
+                  updated_content = f"{profile_content}\\n\\n{stats_content}\\n"
               
               print(f"Updated profile content: {updated_content[:100]}...")
               
-              # Git operations
-              os.chdir('profile-repo')
+              # Update via GitHub API
+              token = os.environ.get('PERSONAL_ACCESS_TOKEN')
+              if not token:
+                  print("PERSONAL_ACCESS_TOKEN not found in environment")
+                  return False
               
-              # Configure git
-              subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'])
-              subprocess.run(['git', 'config', 'user.email', 'github-actions[bot]@users.noreply.github.com'])
+              # Get current file info
+              headers = {
+                  'Authorization': f'token {token}',
+                  'Accept': 'application/vnd.github.v3+json'
+              }
               
-              # Add and commit
-              subprocess.run(['git', 'add', 'README.md'])
+              # Get current README content
+              api_url = 'https://api.github.com/repos/mpartificer/mpartificer/contents/README.md'
+              response = requests.get(api_url, headers=headers)
               
-              # Check if there are changes to commit
-              result = subprocess.run(['git', 'diff', '--staged', '--quiet'], capture_output=True)
-              if result.returncode == 1:  # Changes detected
-                  print("Changes detected, committing...")
-                  subprocess.run(['git', 'commit', '-m', 'Update NYT puzzle stats'])
+              if response.status_code == 200:
+                  current_file = response.json()
+                  current_sha = current_file['sha']
+                  print(f"Current file SHA: {current_sha}")
                   
-                  # Push using GitHub CLI
-                  print("Pushing changes using GitHub CLI...")
-                  push_result = subprocess.run(['gh', 'repo', 'sync', 'mpartificer/mpartificer'], capture_output=True, text=True)
-                  print(f"Push stdout: {push_result.stdout}")
-                  print(f"Push stderr: {push_result.stderr}")
-                  print(f"Push return code: {push_result.returncode}")
+                  # Update the file
+                  update_data = {
+                      'message': 'Update NYT puzzle stats',
+                      'content': base64.b64encode(updated_content.encode()).decode(),
+                      'sha': current_sha,
+                      'branch': 'main'
+                  }
                   
-                  if push_result.returncode == 0:
-                      print("Changes pushed to profile repository")
+                  update_response = requests.put(api_url, headers=headers, json=update_data)
+                  
+                  if update_response.status_code == 200:
+                      print("Successfully updated profile README via API")
                       return True
                   else:
-                      print("Push failed!")
+                      print(f"API update failed: {update_response.status_code}")
+                      print(f"Response: {update_response.text}")
                       return False
               else:
-                  print("No changes to commit")
+                  print(f"Failed to get current file: {response.status_code}")
+                  print(f"Response: {response.text}")
                   return False
 
           if __name__ == "__main__":
