@@ -41,13 +41,6 @@ jobs:
         env:
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
-          # Configure git credentials for the profile repo
-          cd profile-repo
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:$PERSONAL_ACCESS_TOKEN@github.com/mpartificer/mpartificer.git
-          cd ..
-
           cat > update_profile.py << 'EOF'
           import re
           import os
@@ -76,6 +69,7 @@ jobs:
                   return False
                   
               stats_content = stats_match.group(0)
+              print(f"Found stats content: {stats_content[:100]}...")
               
               # Check if target README exists
               if not os.path.exists(target_readme):
@@ -87,6 +81,8 @@ jobs:
               # Read target README (profile README)
               with open(target_readme, 'r') as f:
                   profile_content = f.read()
+              
+              print(f"Current profile content: {profile_content[:100]}...")
               
               # Update or append stats
               if start_marker in profile_content:
@@ -100,17 +96,35 @@ jobs:
               with open(target_readme, 'w') as f:
                   f.write(updated_content)
               
+              print(f"Updated profile content: {updated_content[:100]}...")
+              
               # Git operations
               os.chdir('profile-repo')
+              
+              # Configure git
+              subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'])
+              subprocess.run(['git', 'config', 'user.email', 'github-actions[bot]@users.noreply.github.com'])
+              
+              # Add and commit
               subprocess.run(['git', 'add', 'README.md'])
               
               # Check if there are changes to commit
               result = subprocess.run(['git', 'diff', '--staged', '--quiet'], capture_output=True)
               if result.returncode == 1:  # Changes detected
+                  print("Changes detected, committing...")
                   subprocess.run(['git', 'commit', '-m', 'Update NYT puzzle stats'])
-                  subprocess.run(['git', 'push'])
-                  print("Changes pushed to profile repository")
-                  return True
+                  
+                  # Push using token directly in URL
+                  token = os.environ.get('PERSONAL_ACCESS_TOKEN')
+                  if token:
+                      push_url = f"https://{token}@github.com/mpartificer/mpartificer.git"
+                      print(f"Pushing to: {push_url[:20]}...")
+                      subprocess.run(['git', 'push', push_url, 'main'])
+                      print("Changes pushed to profile repository")
+                      return True
+                  else:
+                      print("PERSONAL_ACCESS_TOKEN not found in environment")
+                      return False
               else:
                   print("No changes to commit")
                   return False
