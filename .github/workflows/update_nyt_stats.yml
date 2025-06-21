@@ -38,7 +38,14 @@ jobs:
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
       - name: Create and run update script
+        env:
+          PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
+          # Set up the remote URL with authentication
+          cd profile-repo
+          git remote set-url origin https://x-access-token:$PERSONAL_ACCESS_TOKEN@github.com/mpartificer/mpartificer.git
+          cd ..
+
           cat > update_profile.py << 'EOF'
           import re
           import os
