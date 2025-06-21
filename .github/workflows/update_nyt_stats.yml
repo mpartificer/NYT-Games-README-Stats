@@ -43,7 +43,12 @@ jobs:
           cd profile-repo
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          echo "Current remote URL:"
+          git remote -v
+          echo "Setting remote URL with token..."
           git remote set-url origin https://x-access-token:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/mpartificer/mpartificer.git
+          echo "New remote URL:"
+          git remote -v
 
       - name: Create and run update script
         env:
@@ -109,6 +114,10 @@ jobs:
               # Git operations
               os.chdir('profile-repo')
               
+              # Debug: Check current remote
+              print("Current git remote:")
+              subprocess.run(['git', 'remote', '-v'])
+              
               # Configure git
               subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'])
               subprocess.run(['git', 'config', 'user.email', 'github-actions[bot]@users.noreply.github.com'])
@@ -124,9 +133,17 @@ jobs:
                   
                   # Simple push - the checkout action should handle auth
                   print("Pushing changes...")
-                  subprocess.run(['git', 'push'])
-                  print("Changes pushed to profile repository")
-                  return True
+                  push_result = subprocess.run(['git', 'push'], capture_output=True, text=True)
+                  print(f"Push stdout: {push_result.stdout}")
+                  print(f"Push stderr: {push_result.stderr}")
+                  print(f"Push return code: {push_result.returncode}")
+                  
+                  if push_result.returncode == 0:
+                      print("Changes pushed to profile repository")
+                      return True
+                  else:
+                      print("Push failed!")
+                      return False
               else:
                   print("No changes to commit")
                   return False
