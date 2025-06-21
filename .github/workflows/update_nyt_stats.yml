@@ -142,18 +142,25 @@ jobs:
                   print("Changes detected, committing...")
                   subprocess.run(['git', 'commit', '-m', 'Update NYT puzzle stats'])
                   
-                  # Simple push - the checkout action should handle auth
-                  print("Pushing changes...")
-                  push_result = subprocess.run(['git', 'push'], capture_output=True, text=True)
-                  print(f"Push stdout: {push_result.stdout}")
-                  print(f"Push stderr: {push_result.stderr}")
-                  print(f"Push return code: {push_result.returncode}")
-                  
-                  if push_result.returncode == 0:
-                      print("Changes pushed to profile repository")
-                      return True
+                  # Push directly with token in URL
+                  print("Pushing changes with token...")
+                  token = os.environ.get('PERSONAL_ACCESS_TOKEN')
+                  if token:
+                      push_url = f"https://{token}@github.com/mpartificer/mpartificer.git"
+                      print(f"Pushing to: {push_url[:20]}...")
+                      push_result = subprocess.run(['git', 'push', push_url, 'main'], capture_output=True, text=True)
+                      print(f"Push stdout: {push_result.stdout}")
+                      print(f"Push stderr: {push_result.stderr}")
+                      print(f"Push return code: {push_result.returncode}")
+                      
+                      if push_result.returncode == 0:
+                          print("Changes pushed to profile repository")
+                          return True
+                      else:
+                          print("Push failed!")
+                          return False
                   else:
-                      print("Push failed!")
+                      print("PERSONAL_ACCESS_TOKEN not found in environment")
                       return False
               else:
                   print("No changes to commit")
