@@ -54,6 +54,16 @@ jobs:
         env:
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
+          # Install GitHub CLI
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          apt-get update
+          apt-get install gh -y
+
+          # Authenticate with GitHub CLI
+          echo "$PERSONAL_ACCESS_TOKEN" | gh auth login --with-token
+
           cat > update_profile.py << 'EOF'
           import re
           import os
@@ -114,24 +124,9 @@ jobs:
               # Git operations
               os.chdir('profile-repo')
               
-              # Debug: Check current remote
-              print("Current git remote:")
-              subprocess.run(['git', 'remote', '-v'])
-              
               # Configure git
               subprocess.run(['git', 'config', 'user.name', 'github-actions[bot]'])
               subprocess.run(['git', 'config', 'user.email', 'github-actions[bot]@users.noreply.github.com'])
-              
-              # Set remote URL with token (in case it was overridden)
-              token = os.environ.get('PERSONAL_ACCESS_TOKEN')
-              if token:
-                  print("Setting remote URL with token...")
-                  subprocess.run(['git', 'remote', 'set-url', 'origin', f'https://x-access-token:{token}@github.com/mpartificer/mpartificer.git'])
-                  print("Updated git remote:")
-                  subprocess.run(['git', 'remote', '-v'])
-              else:
-                  print("PERSONAL_ACCESS_TOKEN not found in environment")
-                  return False
               
               # Add and commit
               subprocess.run(['git', 'add', 'README.md'])
@@ -142,25 +137,18 @@ jobs:
                   print("Changes detected, committing...")
                   subprocess.run(['git', 'commit', '-m', 'Update NYT puzzle stats'])
                   
-                  # Push directly with token in URL
-                  print("Pushing changes with token...")
-                  token = os.environ.get('PERSONAL_ACCESS_TOKEN')
-                  if token:
-                      push_url = f"https://{token}@github.com/mpartificer/mpartificer.git"
-                      print(f"Pushing to: {push_url[:20]}...")
-                      push_result = subprocess.run(['git', 'push', push_url, 'main'], capture_output=True, text=True)
-                      print(f"Push stdout: {push_result.stdout}")
-                      print(f"Push stderr: {push_result.stderr}")
-                      print(f"Push return code: {push_result.returncode}")
-                      
-                      if push_result.returncode == 0:
-                          print("Changes pushed to profile repository")
-                          return True
-                      else:
-                          print("Push failed!")
-                          return False
+                  # Push using GitHub CLI
+                  print("Pushing changes using GitHub CLI...")
+                  push_result = subprocess.run(['gh', 'repo', 'sync', 'mpartificer/mpartificer'], capture_output=True, text=True)
+                  print(f"Push stdout: {push_result.stdout}")
+                  print(f"Push stderr: {push_result.stderr}")
+                  print(f"Push return code: {push_result.returncode}")
+                  
+                  if push_result.returncode == 0:
+                      print("Changes pushed to profile repository")
+                      return True
                   else:
-                      print("PERSONAL_ACCESS_TOKEN not found in environment")
+                      print("Push failed!")
                       return False
               else:
                   print("No changes to commit")
