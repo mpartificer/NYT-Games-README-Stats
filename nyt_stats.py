@@ -36,9 +36,9 @@ def discover_user_id(cookie):
             print(f"Error: {e}")
         print("---")
 
-def get_nyt_stats(cookie):
+def get_nyt_stats(cookie, user_id):
     """
-    Fetch NYT puzzle stats using user's cookie
+    Fetch NYT puzzle stats using user's cookie and user ID
     """
     headers = {
         'Cookie': cookie,
@@ -46,6 +46,7 @@ def get_nyt_stats(cookie):
     }
     
     print(f"Using cookie: {cookie[:50]}..." if len(cookie) > 50 else f"Using cookie: {cookie}")
+    print(f"Using user ID: {user_id}")
     
     # First, try to discover the user ID
     print("Attempting to discover user ID...")
@@ -55,8 +56,8 @@ def get_nyt_stats(cookie):
     crossword_stats = {}
     try:
         print("Fetching crossword stats...")
-        # Note: You'll need to replace 245290511 with your actual user ID
-        crossword_response = requests.get('https://www.nytimes.com/svc/crosswords/v3/245290511/stats-and-streaks.json?date_start=1988-01-01&start_on_monday=true', headers=headers)
+        # Use the provided user ID
+        crossword_response = requests.get(f'https://www.nytimes.com/svc/crosswords/v3/{user_id}/stats-and-streaks.json?date_start=1988-01-01&start_on_monday=true', headers=headers)
         print(f"Crossword response status: {crossword_response.status_code}")
         if crossword_response.status_code == 200:
             crossword_stats = crossword_response.json()
@@ -266,17 +267,24 @@ def update_readme(stats_markdown):
 def main():
     print("Starting NYT stats update...")
     
-    # Get NYT cookie from environment variable
+    # Get NYT cookie and user ID from environment variables
     nyt_cookie = os.environ.get('NYT_COOKIE')
+    nyt_user_id = os.environ.get('NYT_USER_ID')
+    
     if not nyt_cookie:
         print("Error: NYT_COOKIE environment variable not set")
         return
     
+    if not nyt_user_id:
+        print("Error: NYT_USER_ID environment variable not set")
+        return
+    
     print("NYT_COOKIE environment variable found")
+    print(f"NYT_USER_ID environment variable found: {nyt_user_id}")
     
     # Fetch stats
     print("Fetching NYT stats...")
-    stats = get_nyt_stats(nyt_cookie)
+    stats = get_nyt_stats(nyt_cookie, nyt_user_id)
     
     # Format stats as markdown
     print("Formatting stats as markdown...")

@@ -27,13 +27,14 @@ jobs:
       - name: Update NYT Stats
         env:
           NYT_COOKIE: ${{ secrets.NYT_COOKIE }}
+          NYT_USER_ID: ${{ secrets.NYT_USER_ID }}
         run: |
           python nyt_stats.py
 
       - name: Checkout profile repository
         uses: actions/checkout@v4
         with:
-          repository: mpartificer/mpartificer
+          repository: ${{ secrets.PROFILE_REPOSITORY }}
           path: profile-repo
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           ref: main
@@ -46,13 +47,14 @@ jobs:
           echo "Current remote URL:"
           git remote -v
           echo "Setting remote URL with token..."
-          git remote set-url origin https://x-access-token:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/mpartificer/mpartificer.git
+          git remote set-url origin https://x-access-token:${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/${{ secrets.PROFILE_REPOSITORY }}.git
           echo "New remote URL:"
           git remote -v
 
       - name: Create and run update script
         env:
           PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          PROFILE_REPOSITORY: ${{ secrets.PROFILE_REPOSITORY }}
         run: |
           cat > update_profile.py << 'EOF'
           import re
@@ -104,8 +106,12 @@ jobs:
               
               # Update via GitHub API
               token = os.environ.get('PERSONAL_ACCESS_TOKEN')
+              profile_repo = os.environ.get('PROFILE_REPOSITORY')
               if not token:
                   print("PERSONAL_ACCESS_TOKEN not found in environment")
+                  return False
+              if not profile_repo:
+                  print("PROFILE_REPOSITORY not found in environment")
                   return False
               
               # Get current file info
@@ -115,7 +121,7 @@ jobs:
               }
               
               # Get current README content
-              api_url = 'https://api.github.com/repos/mpartificer/mpartificer/contents/README.md'
+              api_url = f'https://api.github.com/repos/{profile_repo}/contents/README.md'
               response = requests.get(api_url, headers=headers)
               
               if response.status_code == 200:
