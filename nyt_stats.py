@@ -107,6 +107,7 @@ def format_stats_markdown(stats):
     print(f"Formatting stats: {stats}")
     
     markdown = "## 🧩 My NYT Puzzle Stats\n\n"
+    markdown += "> *Hey there! 👋 I built this automated tracker to monitor my NYT puzzle progress and connect with fellow puzzle enthusiasts. It updates daily with fresh stats from my solving adventures!*\n\n"
     markdown += f"*Last updated: {stats['last_updated']}*\n\n"
     
     # Format Crossword stats - updated for new API structure
@@ -118,28 +119,70 @@ def format_stats_markdown(stats):
             print(f"Processing crossword stats: {cw_stats}")
             print(f"Processing crossword streaks: {cw_streaks}")
             
-            markdown += "### Crossword\n\n"
+            markdown += "### 🎯 Crossword\n\n"
             markdown += "| Statistic | Value |\n"
             markdown += "|-----------|-------|\n"
             
             if 'current_streak' in cw_streaks:
-                markdown += f"| Current Streak | {cw_streaks['current_streak']} |\n"
+                markdown += f"| 🔥 Current Streak | {cw_streaks['current_streak']} |\n"
             if 'longest_streak' in cw_streaks:
-                markdown += f"| Max Streak | {cw_streaks['longest_streak']} |\n"
+                markdown += f"| 🏆 Max Streak | {cw_streaks['longest_streak']} |\n"
             if 'puzzles_solved' in cw_stats:
-                markdown += f"| Total Solved | {cw_stats['puzzles_solved']} |\n"
+                markdown += f"| ✅ Total Solved | {cw_stats['puzzles_solved']} |\n"
             if 'puzzles_attempted' in cw_stats:
-                markdown += f"| Total Attempted | {cw_stats['puzzles_attempted']} |\n"
+                markdown += f"| 🎲 Total Attempted | {cw_stats['puzzles_attempted']} |\n"
             if 'solve_rate' in cw_stats:
                 solve_rate_pct = round(cw_stats['solve_rate'] * 100, 1)
-                markdown += f"| Solve Rate | {solve_rate_pct}% |\n"
+                markdown += f"| 📊 Solve Rate | {solve_rate_pct}% |\n"
             if 'longest_avg_time' in cw_stats:
                 avg_time = int(cw_stats['longest_avg_time'])
                 minutes = avg_time // 60
                 seconds = avg_time % 60
-                markdown += f"| Average Time | {minutes}m {seconds}s |\n"
+                markdown += f"| ⏱️ Average Time | {minutes}m {seconds}s |\n"
             
             markdown += "\n"
+            
+            # Add daily stats breakdown
+            if 'stats_by_day' in cw_stats:
+                markdown += "#### 📅 Daily Performance\n\n"
+                markdown += "| Day | Best Time | Average Time | Solved |\n"
+                markdown += "|-----|-----------|--------------|--------|\n"
+                
+                days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                for i, day_stats in enumerate(cw_stats['stats_by_day']):
+                    if i < len(days):
+                        day_name = days[i]
+                        best_time = day_stats.get('best_time', 0)
+                        avg_time = day_stats.get('avg_time', 0)
+                        solved = day_stats.get('avg_denominator', 0)
+                        
+                        # Format times
+                        best_min = best_time // 60
+                        best_sec = best_time % 60
+                        avg_min = avg_time // 60
+                        avg_sec = avg_time % 60
+                        
+                        markdown += f"| {day_name} | {best_min}m {best_sec}s | {avg_min}m {avg_sec}s | {solved} |\n"
+                
+                markdown += "\n"
+            
+            # Add vertical streaks (day-of-week streaks)
+            if 'vertical_streaks' in cw_streaks:
+                markdown += "#### 🔥 Day-of-Week Streaks\n\n"
+                markdown += "| Day | Current Streak |\n"
+                markdown += "|-----|----------------|\n"
+                
+                # Note: vertical_streaks[0] = Sunday, [1] = Monday, etc.
+                day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+                for i, streak_info in enumerate(cw_streaks['vertical_streaks']):
+                    if i < len(day_names):
+                        day_name = day_names[i]
+                        streak_length = streak_info.get('length', 0)
+                        emoji = "🔥" if streak_length > 0 else "❄️"
+                        markdown += f"| {day_name} | {emoji} {streak_length} |\n"
+                
+                markdown += "\n"
+            
         else:
             print("No crossword stats or streaks found in results")
     else:
@@ -149,22 +192,22 @@ def format_stats_markdown(stats):
     if stats['wordle']:
         w_stats = stats['wordle']
         print(f"Processing Wordle stats: {w_stats}")
-        markdown += "### Wordle\n\n"
+        markdown += "### 🟩 Wordle\n\n"
         markdown += "| Statistic | Value |\n"
         markdown += "|-----------|-------|\n"
         
         # Adjust these field names based on the actual API response structure
         if 'currentStreak' in w_stats:
-            markdown += f"| Current Streak | {w_stats['currentStreak']} |\n"
+            markdown += f"| 🔥 Current Streak | {w_stats['currentStreak']} |\n"
         if 'maxStreak' in w_stats:
-            markdown += f"| Max Streak | {w_stats['maxStreak']} |\n"
+            markdown += f"| 🏆 Max Streak | {w_stats['maxStreak']} |\n"
         if 'gamesPlayed' in w_stats:
-            markdown += f"| Games Played | {w_stats['gamesPlayed']} |\n"
+            markdown += f"| 🎮 Games Played | {w_stats['gamesPlayed']} |\n"
         if 'winPercentage' in w_stats:
-            markdown += f"| Win Rate | {w_stats['winPercentage']}% |\n"
+            markdown += f"| 📊 Win Rate | {w_stats['winPercentage']}% |\n"
         if 'guesses' in w_stats:
             guesses_dist = w_stats['guesses']
-            markdown += f"| Guess Distribution | 1: {guesses_dist.get('1', 0)}, 2: {guesses_dist.get('2', 0)}, "
+            markdown += f"| 📈 Guess Distribution | 1: {guesses_dist.get('1', 0)}, 2: {guesses_dist.get('2', 0)}, "
             markdown += f"3: {guesses_dist.get('3', 0)}, 4: {guesses_dist.get('4', 0)}, "
             markdown += f"5: {guesses_dist.get('5', 0)}, 6: {guesses_dist.get('6', 0)} |\n"
         
@@ -176,21 +219,21 @@ def format_stats_markdown(stats):
     if stats['spelling_bee']:
         sb_stats = stats['spelling_bee']
         print(f"Processing Spelling Bee stats: {sb_stats}")
-        markdown += "### Spelling Bee\n\n"
+        markdown += "### 🐝 Spelling Bee\n\n"
         markdown += "| Statistic | Value |\n"
         markdown += "|-----------|-------|\n"
         
         # Adjust these field names based on the actual API response structure
         if 'currentStreak' in sb_stats:
-            markdown += f"| Current Streak | {sb_stats['currentStreak']} |\n"
+            markdown += f"| 🔥 Current Streak | {sb_stats['currentStreak']} |\n"
         if 'maxStreak' in sb_stats:
-            markdown += f"| Max Streak | {sb_stats['maxStreak']} |\n"
+            markdown += f"| 🏆 Max Streak | {sb_stats['maxStreak']} |\n"
         if 'gamesPlayed' in sb_stats:
-            markdown += f"| Games Played | {sb_stats['gamesPlayed']} |\n"
+            markdown += f"| 🎮 Games Played | {sb_stats['gamesPlayed']} |\n"
         if 'genius' in sb_stats:
-            markdown += f"| Genius Achieved | {sb_stats['genius']} times |\n"
+            markdown += f"| 🧠 Genius Achieved | {sb_stats['genius']} times |\n"
         if 'pangrams' in sb_stats:
-            markdown += f"| Total Pangrams | {sb_stats['pangrams']} |\n"
+            markdown += f"| 🎯 Total Pangrams | {sb_stats['pangrams']} |\n"
     else:
         print("No Spelling Bee stats found or invalid format")
     
