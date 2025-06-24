@@ -1,14 +1,12 @@
-# NYT Puzzle Stats Tracker
+# NYT Crossword Stats Tracker
 
-Automatically track and display your New York Times puzzle statistics (Crossword, Wordle, Spelling Bee) on your GitHub profile README! This project uses GitHub Actions to fetch your stats daily and update your profile with beautiful, formatted statistics.
+Automatically track and display your New York Times crossword statistics on your GitHub profile README! This project uses GitHub Actions to fetch your stats daily and update your profile with beautiful, formatted statistics.
 
 ## ✨ Features
 
 - 🔄 **Automated Updates**: Runs daily via GitHub Actions
 - 🧩 **Crossword Stats**: Current streak, longest streak, solve rate, average times, and daily performance breakdown
-- 🟩 **Wordle Stats**: Streaks, win rate, and guess distribution
-- 🐝 **Spelling Bee Stats**: Streaks, games played, and achievements
-- 🎨 **Beautiful Formatting**: Emoji-rich markdown tables with friendly messaging
+- 🎨 **Beautiful Formatting**: Emoji-rich markdown tables
 - 🔒 **Secure**: Uses GitHub secrets for sensitive data
 
 ## 🚀 Quick Setup
@@ -36,12 +34,6 @@ Click the "Fork" button at the top of this page to create your own copy.
    - `stats-and-streaks.json`
    - `puzzle/daily/stats.json`
 5. **Find your user ID** in the URL (it's a number like `245290511`)
-
-**Alternative Method:**
-
-- Visit: `https://www.nytimes.com/svc/crosswords/v3/[YOUR_USER_ID]/stats-and-streaks.json`
-- Replace `[YOUR_USER_ID]` with different numbers until you see your stats
-- The user ID is the number that returns your personal data
 
 ### 3. Get Your NYT Cookie
 
@@ -111,14 +103,6 @@ Edit `nyt_stats.py` in the `format_stats_markdown()` function to:
 - Change emojis
 - Modify table layouts
 - Add/remove statistics
-- Customize the introduction message
-
-### Add More Puzzles
-
-The script is designed to be easily extensible. Add new puzzle types by:
-
-1. Adding API calls in `get_nyt_stats()`
-2. Adding formatting in `format_stats_markdown()`
 
 ## 🛠️ Troubleshooting
 

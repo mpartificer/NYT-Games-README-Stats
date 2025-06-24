@@ -38,7 +38,7 @@ def discover_user_id(cookie):
 
 def get_nyt_stats(cookie, user_id):
     """
-    Fetch NYT puzzle stats using user's cookie and user ID
+    Fetch NYT crossword stats using user's cookie and user ID
     """
     headers = {
         'Cookie': cookie,
@@ -52,7 +52,7 @@ def get_nyt_stats(cookie, user_id):
     print("Attempting to discover user ID...")
     discover_user_id(cookie)
     
-    # Try to get crossword stats - using the correct endpoint
+    # Get crossword stats
     crossword_stats = {}
     try:
         print("Fetching crossword stats...")
@@ -67,34 +67,8 @@ def get_nyt_stats(cookie, user_id):
     except Exception as e:
         print(f"Error fetching crossword stats: {e}")
     
-    # Try to get Wordle and Spelling Bee stats - using the correct endpoint
-    wordle_stats = {}
-    spelling_bee_stats = {}
-    try:
-        print("Fetching Wordle and Spelling Bee stats...")
-        # Note: You'll need to replace 2329 with the current puzzle ID
-        games_response = requests.get('https://www.nytimes.com/svc/games/state/wordleV2/latests?puzzle_ids=2329', headers=headers)
-        print(f"Games response status: {games_response.status_code}")
-        if games_response.status_code == 200:
-            games_data = games_response.json()
-            print(f"Games stats received: {games_data}")
-            
-            # Extract Wordle stats if available
-            if 'wordle' in games_data:
-                wordle_stats = games_data['wordle']
-            
-            # Extract Spelling Bee stats if available
-            if 'spellingBee' in games_data:
-                spelling_bee_stats = games_data['spellingBee']
-        else:
-            print(f"Games response text: {games_response.text[:200]}...")
-    except Exception as e:
-        print(f"Error fetching games stats: {e}")
-    
     result = {
         "crossword": crossword_stats,
-        "wordle": wordle_stats,
-        "spelling_bee": spelling_bee_stats,
         "last_updated": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     }
     
@@ -103,12 +77,11 @@ def get_nyt_stats(cookie, user_id):
 
 def format_stats_markdown(stats):
     """
-    Format the stats as a nice markdown table for GitHub README
+    Format the crossword stats as a nice markdown table for GitHub README
     """
     print(f"Formatting stats: {stats}")
     
     markdown = "## 🧩 My New York Times Crossword Stats\n\n"
-    markdown += "> *Hey there! 👋 I built this automated tracker to monitor my NYT puzzle progress and connect with fellow puzzle enthusiasts. It updates daily with fresh stats from my solving adventures!*\n\n"
     markdown += f"*Last updated: {stats['last_updated']}*\n\n"
     
     # Format Crossword stats - updated for new API structure
@@ -184,55 +157,6 @@ def format_stats_markdown(stats):
     else:
         print("No crossword stats found or invalid format")
     
-    # Format Wordle stats - updated for new API structure
-    if stats['wordle']:
-        w_stats = stats['wordle']
-        print(f"Processing Wordle stats: {w_stats}")
-        markdown += "### 🟩 Wordle\n\n"
-        markdown += "| Statistic | Value |\n"
-        markdown += "|-----------|-------|\n"
-        
-        # Adjust these field names based on the actual API response structure
-        if 'currentStreak' in w_stats:
-            markdown += f"| 🔥 Current Streak | {w_stats['currentStreak']} |\n"
-        if 'maxStreak' in w_stats:
-            markdown += f"| 🏆 Max Streak | {w_stats['maxStreak']} |\n"
-        if 'gamesPlayed' in w_stats:
-            markdown += f"| 🎮 Games Played | {w_stats['gamesPlayed']} |\n"
-        if 'winPercentage' in w_stats:
-            markdown += f"| 📊 Win Rate | {w_stats['winPercentage']}% |\n"
-        if 'guesses' in w_stats:
-            guesses_dist = w_stats['guesses']
-            markdown += f"| 📈 Guess Distribution | 1: {guesses_dist.get('1', 0)}, 2: {guesses_dist.get('2', 0)}, "
-            markdown += f"3: {guesses_dist.get('3', 0)}, 4: {guesses_dist.get('4', 0)}, "
-            markdown += f"5: {guesses_dist.get('5', 0)}, 6: {guesses_dist.get('6', 0)} |\n"
-        
-        markdown += "\n"
-    else:
-        print("No Wordle stats found or invalid format")
-    
-    # Format Spelling Bee stats - updated for new API structure
-    if stats['spelling_bee']:
-        sb_stats = stats['spelling_bee']
-        print(f"Processing Spelling Bee stats: {sb_stats}")
-        markdown += "### 🐝 Spelling Bee\n\n"
-        markdown += "| Statistic | Value |\n"
-        markdown += "|-----------|-------|\n"
-        
-        # Adjust these field names based on the actual API response structure
-        if 'currentStreak' in sb_stats:
-            markdown += f"| 🔥 Current Streak | {sb_stats['currentStreak']} |\n"
-        if 'maxStreak' in sb_stats:
-            markdown += f"| 🏆 Max Streak | {sb_stats['maxStreak']} |\n"
-        if 'gamesPlayed' in sb_stats:
-            markdown += f"| 🎮 Games Played | {sb_stats['gamesPlayed']} |\n"
-        if 'genius' in sb_stats:
-            markdown += f"| 🧠 Genius Achieved | {sb_stats['genius']} times |\n"
-        if 'pangrams' in sb_stats:
-            markdown += f"| 🎯 Total Pangrams | {sb_stats['pangrams']} |\n"
-    else:
-        print("No Spelling Bee stats found or invalid format")
-    
     print(f"Generated markdown: {markdown}")
     return markdown
 
@@ -294,7 +218,7 @@ def main():
     print("Updating README...")
     update_readme(stats_markdown)
     
-    print("GitHub README successfully updated with NYT puzzle stats!")
+    print("GitHub README successfully updated with NYT crossword stats!")
 
 if __name__ == "__main__":
     main()
