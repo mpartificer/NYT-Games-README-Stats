@@ -145,10 +145,13 @@ def format_stats_markdown(stats):
             # Add daily stats breakdown
             if 'stats_by_day' in cw_stats:
                 markdown += "#### 📅 Daily Performance\n\n"
-                markdown += "| Day | Best Time | Average Time | Solved |\n"
-                markdown += "|-----|-----------|--------------|--------|\n"
+                markdown += "| Day | Best Time | Average Time | Solved | Current Streak |\n"
+                markdown += "|-----|-----------|--------------|--------|----------------|\n"
                 
                 days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+                # Note: vertical_streaks[0] = Sunday, [1] = Monday, etc.
+                day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+                
                 for i, day_stats in enumerate(cw_stats['stats_by_day']):
                     if i < len(days):
                         day_name = days[i]
@@ -156,30 +159,22 @@ def format_stats_markdown(stats):
                         avg_time = day_stats.get('avg_time', 0)
                         solved = day_stats.get('avg_denominator', 0)
                         
+                        # Get streak for this day (adjust index for vertical_streaks mapping)
+                        streak_length = 0
+                        if 'vertical_streaks' in cw_streaks and i + 1 < len(cw_streaks['vertical_streaks']):
+                            streak_length = cw_streaks['vertical_streaks'][i + 1].get('length', 0)
+                        
                         # Format times
                         best_min = best_time // 60
                         best_sec = best_time % 60
                         avg_min = avg_time // 60
                         avg_sec = avg_time % 60
                         
-                        markdown += f"| {day_name} | {best_min}m {best_sec}s | {avg_min}m {avg_sec}s | {solved} |\n"
-                
-                markdown += "\n"
-            
-            # Add vertical streaks (day-of-week streaks)
-            if 'vertical_streaks' in cw_streaks:
-                markdown += "#### 🔥 Day-of-Week Streaks\n\n"
-                markdown += "| Day | Current Streak |\n"
-                markdown += "|-----|----------------|\n"
-                
-                # Note: vertical_streaks[0] = Sunday, [1] = Monday, etc.
-                day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
-                for i, streak_info in enumerate(cw_streaks['vertical_streaks']):
-                    if i < len(day_names):
-                        day_name = day_names[i]
-                        streak_length = streak_info.get('length', 0)
-                        emoji = "🔥" if streak_length > 0 else "❄️"
-                        markdown += f"| {day_name} | {emoji} {streak_length} |\n"
+                        # Format streak with emoji
+                        streak_emoji = "🔥" if streak_length > 0 else "❄️"
+                        streak_display = f"{streak_emoji} {streak_length}"
+                        
+                        markdown += f"| {day_name} | {best_min}m {best_sec}s | {avg_min}m {avg_sec}s | {solved} | {streak_display} |\n"
                 
                 markdown += "\n"
             
