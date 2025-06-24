@@ -106,7 +106,7 @@ def format_stats_markdown(stats):
     """
     print(f"Formatting stats: {stats}")
     
-    markdown = "## 🧩 My NYT Puzzle Stats\n\n"
+    markdown = "## 🧩 My New York Times Crossword Stats\n\n"
     markdown += "> *Hey there! 👋 I built this automated tracker to monitor my NYT puzzle progress and connect with fellow puzzle enthusiasts. It updates daily with fresh stats from my solving adventures!*\n\n"
     markdown += f"*Last updated: {stats['last_updated']}*\n\n"
     
