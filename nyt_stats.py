@@ -122,9 +122,9 @@ def format_stats_markdown(stats):
                 markdown += "| Day | Best Time | Average Time | Solved | Current Streak |\n"
                 markdown += "|-----|-----------|--------------|--------|----------------|\n"
                 
+                # Note: stats_by_day[0] = Monday, stats_by_day[1] = Tuesday, etc.
+                # Note: vertical_streaks[0] = Sunday, vertical_streaks[1] = Monday, etc.
                 days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-                # Note: vertical_streaks[0] = Sunday, [1] = Monday, etc.
-                day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
                 
                 for i, day_stats in enumerate(cw_stats['stats_by_day']):
                     if i < len(days):
@@ -133,10 +133,17 @@ def format_stats_markdown(stats):
                         avg_time = day_stats.get('avg_time', 0)
                         solved = day_stats.get('avg_denominator', 0)
                         
-                        # Get streak for this day (adjust index for vertical_streaks mapping)
+                        # Get streak for this day
+                        # stats_by_day[i] corresponds to vertical_streaks[i + 1] for Monday-Saturday
+                        # For Sunday (stats_by_day[6]), we need vertical_streaks[0]
                         streak_length = 0
-                        if 'vertical_streaks' in cw_streaks and i + 1 < len(cw_streaks['vertical_streaks']):
-                            streak_length = cw_streaks['vertical_streaks'][i + 1].get('length', 0)
+                        if 'vertical_streaks' in cw_streaks:
+                            if i == 6:  # Sunday is at index 6 in stats_by_day, but index 0 in vertical_streaks
+                                if len(cw_streaks['vertical_streaks']) > 0:
+                                    streak_length = cw_streaks['vertical_streaks'][0].get('length', 0)
+                            else:  # Monday-Saturday: stats_by_day[i] = vertical_streaks[i + 1]
+                                if i + 1 < len(cw_streaks['vertical_streaks']):
+                                    streak_length = cw_streaks['vertical_streaks'][i + 1].get('length', 0)
                         
                         # Format times
                         best_min = best_time // 60
